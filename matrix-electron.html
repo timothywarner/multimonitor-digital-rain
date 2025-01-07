@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matrix Effect</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: black;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-family: monospace;
+        }
+
+        .matrix-column {
+            font-size: 1.5em;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .matrix-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100vw;
+            height: 100vh;
+            transform: scale(1.2);
+        }
+
+        .character {
+            animation: fall linear infinite;
+            animation-duration: var(--fall-duration);
+            animation-delay: var(--fall-delay);
+            transform: translateY(var(--start-y));
+            text-shadow: 0 0 8px var(--glow-color);
+            opacity: var(--opacity);
+            color: var(--char-color);
+        }
+
+        .leader {
+            --char-color: #fff !important;
+            --glow-color: #0f0 !important;
+            --opacity: 1 !important;
+            text-shadow: 0 0 12px var(--glow-color), 0 0 20px var(--glow-color) !important;
+        }
+
+        .trail {
+            --opacity: 0.8;
+            text-shadow: 0 0 8px var(--glow-color), 0 0 15px var(--glow-color);
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(200vh);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-container" id="container"></div>
+    <script>
+        console.log('Matrix script starting...');
+        
+        const container = document.getElementById('container');
+        const chars = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ012345789:・.\"=*+-<>¦｜╌";
+        const columnCount = Math.floor(window.innerWidth / 25);
+        
+        function createMatrix() {
+            container.innerHTML = '';
+            for (let i = 0; i < columnCount; i++) {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                
+                const characterCount = Math.floor(Math.random() * 25) + 20;
+                for (let j = 0; j < characterCount; j++) {
+                    const char = document.createElement('div');
+                    char.className = 'character';
+                    char.textContent = chars[Math.floor(Math.random() * chars.length)];
+                    
+                    // Animation properties - slower overall movement
+                    const duration = Math.random() * 15 + 20; // Slower base speed
+                    char.style.setProperty('--fall-duration', `${duration}s`);
+                    char.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
+                    char.style.setProperty('--start-y', `-${Math.random() * 100}vh`);
+                    
+                    // Visual properties with more pronounced trails
+                    const baseColor = j === 0 ? '#fff' : '#0f0';
+                    const glowColor = j === 0 ? '#0f0' : 'rgba(0, 255, 0, 0.7)';
+                    // Slower opacity falloff for longer visible trails
+                    const opacity = Math.max(1 - (j * 0.05), 0.4);
+                    
+                    char.style.setProperty('--char-color', baseColor);
+                    char.style.setProperty('--glow-color', glowColor);
+                    char.style.setProperty('--opacity', opacity);
+                    
+                    if (j === 0) char.classList.add('leader');
+                    if (j > 0) char.classList.add('trail');
+                    
+                    column.appendChild(char);
+                }
+                
+                container.appendChild(column);
+            }
+        }
+
+        // Initial creation
+        createMatrix();
+        
+        // Recreate periodically to keep it fresh
+        setInterval(() => {
+            if (Math.random() > 0.9) { // Less frequent updates (10% chance)
+                const columns = document.querySelectorAll('.matrix-column');
+                const randomColumn = columns[Math.floor(Math.random() * columns.length)];
+                if (randomColumn) {
+                    randomColumn.innerHTML = '';
+                    const characterCount = Math.floor(Math.random() * 25) + 20;
+                    for (let j = 0; j < characterCount; j++) {
+                        const char = document.createElement('div');
+                        char.className = 'character';
+                        char.textContent = chars[Math.floor(Math.random() * chars.length)];
+                        
+                        const duration = Math.random() * 15 + 20;
+                        char.style.setProperty('--fall-duration', `${duration}s`);
+                        char.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
+                        char.style.setProperty('--start-y', `-${Math.random() * 100}vh`);
+                        
+                        const baseColor = j === 0 ? '#fff' : '#0f0';
+                        const glowColor = j === 0 ? '#0f0' : 'rgba(0, 255, 0, 0.7)';
+                        const opacity = Math.max(1 - (j * 0.05), 0.4);
+                        
+                        char.style.setProperty('--char-color', baseColor);
+                        char.style.setProperty('--glow-color', glowColor);
+                        char.style.setProperty('--opacity', opacity);
+                        
+                        if (j === 0) char.classList.add('leader');
+                        if (j > 0) char.classList.add('trail');
+                        
+                        randomColumn.appendChild(char);
+                    }
+                }
+            }
+        }, 1000);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            createMatrix();
+        });
+    </script>
+</body>
+</html> 

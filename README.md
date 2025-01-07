@@ -1,15 +1,15 @@
-# Matrix Background Effect
+# Multimonitor Digital Rain
 
-A multi-monitor Matrix digital rain effect perfect for video backgrounds.
+A Matrix-style digital rain effect that runs across all your monitors - perfect for video backgrounds.
 
 ## Windows Users (Simple Method)
-1. Download `Matrix Screens.exe`
+1. Download `Digital Rain.exe`
 2. Double-click to run
 3. Press ESC to exit
 
 ## Features
 
-- Authentic Matrix digital rain effect
+- Authentic Matrix-style digital rain effect
 - Automatically spreads across all monitors
 - No installation required
 - Perfect for video backgrounds

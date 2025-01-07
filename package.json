@@ -1,7 +1,7 @@
 {
-  "name": "matrix-screens",
+  "name": "multimonitor-digital-rain",
   "version": "1.0.0",
-  "description": "Matrix effect for multiple screens",
+  "description": "Matrix-style digital rain effect for multiple monitors",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,8 +9,8 @@
     "dist": "electron-builder"
   },
   "build": {
-    "appId": "com.techtrainertim.matrix",
-    "productName": "Matrix Screens",
+    "appId": "com.techtrainertim.digitalrain",
+    "productName": "Digital Rain",
     "win": {
       "target": "portable",
       "icon": "icon.ico"

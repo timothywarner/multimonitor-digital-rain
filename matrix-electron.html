@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Matrix Effect</title>
+    <title>Digital Rain</title>
     <style>
         body {
             margin: 0;
@@ -14,10 +14,12 @@
         }
 
         .matrix-column {
-            font-size: 1.5em;
+            font-size: var(--font-size, 1.5em);
             display: flex;
             flex-direction: column;
             user-select: none;
+            position: relative;
+            will-change: transform;
         }
 
         .matrix-container {
@@ -26,125 +28,163 @@
             width: 100vw;
             height: 100vh;
             transform: scale(1.2);
+            will-change: transform;
         }
 
         .character {
-            animation: fall linear infinite;
-            animation-duration: var(--fall-duration);
-            animation-delay: var(--fall-delay);
-            transform: translateY(var(--start-y));
-            text-shadow: 0 0 8px var(--glow-color);
+            position: absolute;
+            text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--glow-color);
             opacity: var(--opacity);
             color: var(--char-color);
+            will-change: transform;
+            transform: translateY(var(--y-pos));
         }
 
         .leader {
             --char-color: #fff !important;
-            --glow-color: #0f0 !important;
-            --opacity: 1 !important;
-            text-shadow: 0 0 12px var(--glow-color), 0 0 20px var(--glow-color) !important;
+            text-shadow: 0 0 calc(12px * var(--glow-intensity)) var(--glow-color),
+                        0 0 calc(20px * var(--glow-intensity)) var(--glow-color) !important;
+            opacity: 1 !important;
         }
 
         .trail {
             --opacity: 0.8;
-            text-shadow: 0 0 8px var(--glow-color), 0 0 15px var(--glow-color);
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(200vh);
-            }
+            text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--glow-color),
+                        0 0 calc(15px * var(--glow-intensity)) var(--glow-color);
         }
     </style>
 </head>
 <body>
     <div class="matrix-container" id="container"></div>
     <script>
+        const { ipcRenderer } = require('electron');
+        
         console.log('Matrix script starting...');
         
         const container = document.getElementById('container');
         const chars = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ012345789:・.\"=*+-<>¦｜╌";
-        const columnCount = Math.floor(window.innerWidth / 25);
+        
+        // Default settings
+        let settings = {
+            speed: 1.0,
+            color: '#00ff00',
+            density: 1.0,
+            fontSize: 20,
+            glowIntensity: 1.0
+        };
+
+        // Animation state
+        let animationFrameId;
+        const columns = new Map();
+
+        function updateCharacterPosition(char, speed) {
+            const yPos = parseFloat(char.style.getPropertyValue('--y-pos')) || -100;
+            const newPos = yPos + (0.5 * speed);
+            
+            if (newPos > window.innerHeight) {
+                char.style.setProperty('--y-pos', '-100px');
+                char.textContent = chars[Math.floor(Math.random() * chars.length)];
+            } else {
+                char.style.setProperty('--y-pos', `${newPos}px`);
+            }
+        }
+
+        function animate() {
+            columns.forEach(columnChars => {
+                columnChars.forEach(char => {
+                    updateCharacterPosition(char, settings.speed);
+                });
+            });
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function updateStyles() {
+            document.documentElement.style.setProperty('--font-size', `${settings.fontSize}px`);
+            document.documentElement.style.setProperty('--glow-intensity', settings.glowIntensity);
+            
+            columns.forEach(columnChars => {
+                columnChars.forEach(char => {
+                    if (!char.classList.contains('leader')) {
+                        char.style.setProperty('--char-color', settings.color);
+                    }
+                    char.style.setProperty('--glow-color', settings.color);
+                });
+            });
+        }
         
         function createMatrix() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
             container.innerHTML = '';
+            columns.clear();
+            
+            const columnCount = Math.floor(window.innerWidth / (settings.fontSize * settings.density));
+            
             for (let i = 0; i < columnCount; i++) {
                 const column = document.createElement('div');
                 column.className = 'matrix-column';
+                const columnChars = new Set();
                 
-                const characterCount = Math.floor(Math.random() * 25) + 20;
+                const characterCount = Math.floor(Math.random() * 25 + 20);
                 for (let j = 0; j < characterCount; j++) {
                     const char = document.createElement('div');
                     char.className = 'character';
                     char.textContent = chars[Math.floor(Math.random() * chars.length)];
                     
-                    // Animation properties - slower overall movement
-                    const duration = Math.random() * 15 + 20; // Slower base speed
-                    char.style.setProperty('--fall-duration', `${duration}s`);
-                    char.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
-                    char.style.setProperty('--start-y', `-${Math.random() * 100}vh`);
+                    char.style.setProperty('--y-pos', `${Math.random() * -500}px`);
                     
-                    // Visual properties with more pronounced trails
-                    const baseColor = j === 0 ? '#fff' : '#0f0';
-                    const glowColor = j === 0 ? '#0f0' : 'rgba(0, 255, 0, 0.7)';
-                    // Slower opacity falloff for longer visible trails
-                    const opacity = Math.max(1 - (j * 0.05), 0.4);
-                    
-                    char.style.setProperty('--char-color', baseColor);
-                    char.style.setProperty('--glow-color', glowColor);
-                    char.style.setProperty('--opacity', opacity);
-                    
-                    if (j === 0) char.classList.add('leader');
-                    if (j > 0) char.classList.add('trail');
+                    if (j === 0) {
+                        char.classList.add('leader');
+                    } else {
+                        char.classList.add('trail');
+                        char.style.setProperty('--char-color', settings.color);
+                    }
+                    char.style.setProperty('--glow-color', settings.color);
                     
                     column.appendChild(char);
+                    columnChars.add(char);
                 }
                 
                 container.appendChild(column);
+                columns.set(column, columnChars);
             }
+            
+            animate();
         }
+
+        // Handle settings updates
+        ipcRenderer.on('update-settings', (event, newSettings) => {
+            const needsRecreate = newSettings.fontSize !== settings.fontSize || 
+                                newSettings.density !== settings.density;
+            
+            settings = { ...settings, ...newSettings };
+            
+            if (needsRecreate) {
+                setTimeout(createMatrix, 50);
+            } else {
+                updateStyles();
+            }
+        });
 
         // Initial creation
         createMatrix();
-        
-        // Recreate periodically to keep it fresh
-        setInterval(() => {
-            if (Math.random() > 0.9) { // Less frequent updates (10% chance)
-                const columns = document.querySelectorAll('.matrix-column');
-                const randomColumn = columns[Math.floor(Math.random() * columns.length)];
-                if (randomColumn) {
-                    randomColumn.innerHTML = '';
-                    const characterCount = Math.floor(Math.random() * 25) + 20;
-                    for (let j = 0; j < characterCount; j++) {
-                        const char = document.createElement('div');
-                        char.className = 'character';
-                        char.textContent = chars[Math.floor(Math.random() * chars.length)];
-                        
-                        const duration = Math.random() * 15 + 20;
-                        char.style.setProperty('--fall-duration', `${duration}s`);
-                        char.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
-                        char.style.setProperty('--start-y', `-${Math.random() * 100}vh`);
-                        
-                        const baseColor = j === 0 ? '#fff' : '#0f0';
-                        const glowColor = j === 0 ? '#0f0' : 'rgba(0, 255, 0, 0.7)';
-                        const opacity = Math.max(1 - (j * 0.05), 0.4);
-                        
-                        char.style.setProperty('--char-color', baseColor);
-                        char.style.setProperty('--glow-color', glowColor);
-                        char.style.setProperty('--opacity', opacity);
-                        
-                        if (j === 0) char.classList.add('leader');
-                        if (j > 0) char.classList.add('trail');
-                        
-                        randomColumn.appendChild(char);
-                    }
-                }
-            }
-        }, 1000);
 
         // Handle window resize
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            createMatrix();
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(createMatrix, 100);
+        });
+
+        // Cleanup on unload
+        window.addEventListener('unload', () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
         });
     </script>
 </body>

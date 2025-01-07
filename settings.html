@@ -4,226 +4,115 @@
     <title>Digital Rain Settings</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
             background: #1a1a1a;
             color: #fff;
+            font-family: Arial, sans-serif;
         }
-
-        .container {
-            max-width: 360px;
+        
+        #settings {
+            max-width: 400px;
             margin: 0 auto;
         }
-
-        h1 {
-            text-align: center;
-            color: #0f0;
-            margin-bottom: 30px;
-            font-size: 24px;
+        
+        .setting {
+            margin-bottom: 20px;
         }
-
-        .setting-group {
-            margin-bottom: 25px;
-        }
-
+        
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #0f0;
+            margin-bottom: 5px;
         }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
+        
         input[type="range"] {
-            flex: 1;
-            height: 4px;
-            background: #333;
-            outline: none;
-            -webkit-appearance: none;
+            width: 100%;
+            margin: 5px 0;
         }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #0f0;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
+        
         input[type="color"] {
-            -webkit-appearance: none;
             width: 50px;
             height: 30px;
+            padding: 0;
             border: none;
             border-radius: 4px;
-            padding: 0;
-            cursor: pointer;
         }
-
+        
         .value-display {
-            min-width: 40px;
-            text-align: right;
-            color: #0f0;
+            margin-left: 10px;
+            font-size: 0.9em;
+            color: #aaa;
         }
-
-        .preset-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        
+        .presets {
+            margin: 20px 0;
+            display: flex;
             gap: 10px;
-            margin-top: 30px;
         }
-
+        
         button {
+            padding: 8px 16px;
             background: #333;
-            border: 1px solid #0f0;
-            color: #0f0;
-            padding: 10px;
+            color: #fff;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background 0.2s;
         }
-
+        
         button:hover {
-            background: #0f0;
-            color: #000;
+            background: #444;
         }
-
-        .keyboard-hint {
-            text-align: center;
+        
+        #reset {
+            width: 100%;
             margin-top: 20px;
-            color: #666;
-            font-size: 12px;
+            background: #555;
+        }
+        
+        #reset:hover {
+            background: #666;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Digital Rain Settings</h1>
-        
-        <div class="setting-group">
+    <div id="settings">
+        <div class="setting">
             <label>Speed</label>
-            <div class="slider-container">
-                <input type="range" id="speed" min="0.1" max="2" step="0.1" value="1.0">
-                <div class="value-display">1.0x</div>
-            </div>
+            <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1">
+            <span class="value-display">1.0</span>
         </div>
-
-        <div class="setting-group">
-            <label>Color</label>
-            <div class="slider-container">
-                <input type="color" id="color" value="#00ff00">
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <label>Density</label>
-            <div class="slider-container">
-                <input type="range" id="density" min="0.5" max="2" step="0.1" value="1.0">
-                <div class="value-display">1.0x</div>
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <label>Font Size</label>
-            <div class="slider-container">
-                <input type="range" id="fontSize" min="12" max="32" step="2" value="20">
-                <div class="value-display">20px</div>
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <label>Glow Intensity</label>
-            <div class="slider-container">
-                <input type="range" id="glowIntensity" min="0.5" max="2" step="0.1" value="1.0">
-                <div class="value-display">1.0x</div>
-            </div>
-        </div>
-
-        <div class="preset-buttons">
-            <button id="classic">Classic Matrix</button>
-            <button id="bright">Bright & Fast</button>
-            <button id="subtle">Subtle & Slow</button>
-            <button id="reset">Reset All</button>
-        </div>
-
-        <div class="keyboard-hint">
-            Press 'S' to show/hide settings
-        </div>
-    </div>
-
-    <script>
-        const { ipcRenderer } = require('electron');
         
-        // Get all input elements
-        const inputs = {
-            speed: document.getElementById('speed'),
-            color: document.getElementById('color'),
-            density: document.getElementById('density'),
-            fontSize: document.getElementById('fontSize'),
-            glowIntensity: document.getElementById('glowIntensity')
-        };
-
-        // Update value displays and send settings
-        function updateSetting(id, value) {
-            const display = inputs[id].parentElement.querySelector('.value-display');
-            if (display) {
-                display.textContent = id === 'fontSize' ? `${value}px` : `${value}x`;
-            }
-            
-            ipcRenderer.send('settings-update', { [id]: value });
-        }
-
-        // Add event listeners to all inputs
-        Object.entries(inputs).forEach(([id, input]) => {
-            input.addEventListener('input', (e) => {
-                updateSetting(id, e.target.value);
-            });
-        });
-
-        // Preset configurations
-        const presets = {
-            classic: {
-                speed: 1.0,
-                color: '#00ff00',
-                density: 1.0,
-                fontSize: 20,
-                glowIntensity: 1.0
-            },
-            bright: {
-                speed: 1.5,
-                color: '#00ff33',
-                density: 1.5,
-                fontSize: 24,
-                glowIntensity: 1.8
-            },
-            subtle: {
-                speed: 0.6,
-                color: '#00cc00',
-                density: 0.7,
-                fontSize: 16,
-                glowIntensity: 0.8
-            }
-        };
-
-        // Apply preset
-        function applyPreset(preset) {
-            Object.entries(preset).forEach(([id, value]) => {
-                inputs[id].value = value;
-                updateSetting(id, value);
-            });
-        }
-
-        // Add preset button listeners
-        document.getElementById('classic').addEventListener('click', () => applyPreset(presets.classic));
-        document.getElementById('bright').addEventListener('click', () => applyPreset(presets.bright));
-        document.getElementById('subtle').addEventListener('click', () => applyPreset(presets.subtle));
-        document.getElementById('reset').addEventListener('click', () => applyPreset(presets.classic));
+        <div class="setting">
+            <label>Font Size</label>
+            <input type="range" id="fontSize" min="10" max="40" step="2" value="20">
+            <span class="value-display">20px</span>
+        </div>
+        
+        <div class="setting">
+            <label>Color</label>
+            <input type="color" id="color" value="#00ff00">
+        </div>
+        
+        <div class="setting">
+            <label>Opacity</label>
+            <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
+            <span class="value-display">0.8</span>
+        </div>
+        
+        <div class="presets">
+            <button id="classic">Classic</button>
+            <button id="bright">Bright</button>
+            <button id="subtle">Subtle</button>
+        </div>
+        
+        <button id="reset">Reset All</button>
+    </div>
+    
+    <script>
+        const settings = require('./settings');
+        settings.init();
     </script>
 </body>
+</html> 
 </html> 

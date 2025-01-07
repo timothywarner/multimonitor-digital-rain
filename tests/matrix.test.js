@@ -2,129 +2,93 @@
  * @jest-environment jsdom
  */
 
+const { ipcRenderer } = require('electron');
+
 describe('Matrix Effect', () => {
-    let container;
+    let matrix;
 
     beforeEach(() => {
-        // Set up DOM
-        document.body.innerHTML = '<div id="container"></div>';
-        container = document.getElementById('container');
-        
-        // Reset window dimensions
-        global.innerWidth = 1920;
-        global.innerHeight = 1080;
-        
-        // Clear require cache
         jest.resetModules();
+        document.body.innerHTML = `
+            <div id="container"></div>
+        `;
+        matrix = require('../matrix');
     });
 
     describe('Initialization', () => {
         it('should create matrix with default settings', () => {
-            require('../matrix-electron.html');
-            
-            const columns = container.querySelectorAll('.matrix-column');
+            matrix.initMatrix();
+            const columns = document.querySelectorAll('.matrix-column');
             expect(columns.length).toBeGreaterThan(0);
-            
-            const characters = container.querySelectorAll('.character');
-            expect(characters.length).toBeGreaterThan(0);
         });
 
         it('should create correct number of columns based on settings', () => {
-            const { createMatrix, settings } = require('../matrix-electron.html');
-            settings.fontSize = 20;
-            settings.density = 1.0;
+            matrix.settings.fontSize = 20;
+            matrix.initMatrix();
             
-            createMatrix();
-            
-            const expectedColumns = Math.floor(window.innerWidth / (settings.fontSize * settings.density));
-            const columns = container.querySelectorAll('.matrix-column');
+            const expectedColumns = Math.floor(window.innerWidth / 20);
+            const columns = document.querySelectorAll('.matrix-column');
             expect(columns.length).toBe(expectedColumns);
         });
     });
 
     describe('Animation', () => {
         it('should update character positions correctly', () => {
-            const { updateCharacterPosition } = require('../matrix-electron.html');
-            
             const char = document.createElement('div');
-            char.style.setProperty('--y-pos', '0px');
+            char.style.setProperty('--y-pos', '0');
             
-            updateCharacterPosition(char, 1.0);
-            
-            const newPos = parseFloat(char.style.getPropertyValue('--y-pos'));
-            expect(newPos).toBeGreaterThan(0);
+            matrix.updateCharacterPosition(char);
+            expect(char.style.setProperty).toHaveBeenCalledWith(
+                '--y-pos',
+                expect.stringMatching(/\d+px/)
+            );
         });
 
         it('should reset characters when they reach bottom', () => {
-            const { updateCharacterPosition } = require('../matrix-electron.html');
-            
             const char = document.createElement('div');
-            char.style.setProperty('--y-pos', '1100px'); // Beyond window height
-            const originalChar = char.textContent;
+            char.style.getPropertyValue.mockReturnValue('1100');
             
-            updateCharacterPosition(char, 1.0);
-            
-            expect(char.style.getPropertyValue('--y-pos')).toBe('-100px');
-            expect(char.textContent).not.toBe(originalChar);
+            matrix.updateCharacterPosition(char);
+            expect(char.style.setProperty).toHaveBeenCalledWith('--y-pos', '0px');
+            expect(char.textContent).toBeTruthy();
         });
     });
 
     describe('Settings Updates', () => {
         it('should handle color changes', () => {
-            const { ipcRenderer } = require('electron');
-            require('../matrix-electron.html');
+            matrix.initMatrix();
             
             const newSettings = {
                 color: '#ff0000',
-                glowIntensity: 1.5
+                opacity: 0.8
             };
             
-            // Simulate settings update
-            const updateHandler = ipcRenderer.on.mock.calls.find(
-                call => call[0] === 'update-settings'
-            );
-            const [, handler] = updateHandler;
-            handler({}, newSettings);
+            ipcRenderer.emit('settings-updated', {}, newSettings);
             
-            const characters = container.querySelectorAll('.character:not(.leader)');
-            const char = characters[0];
-            expect(char.style.getPropertyValue('--char-color')).toBe('#ff0000');
+            const chars = document.querySelectorAll('.matrix-char');
+            expect(chars[0].style.color).toMatch(/rgba\(255, 0, 0, 0\.8\)/);
         });
 
         it('should recreate matrix when fontSize changes', () => {
-            const { ipcRenderer } = require('electron');
-            require('../matrix-electron.html');
-            
-            const originalColumns = container.querySelectorAll('.matrix-column').length;
+            matrix.initMatrix();
+            const originalColumns = document.querySelectorAll('.matrix-column').length;
             
             const newSettings = {
-                fontSize: 30 // Different from default
+                fontSize: 30
             };
             
-            // Simulate settings update
-            const updateHandler = ipcRenderer.on.mock.calls.find(
-                call => call[0] === 'update-settings'
-            );
-            const [, handler] = updateHandler;
-            handler({}, newSettings);
+            ipcRenderer.emit('settings-updated', {}, newSettings);
             
-            // Wait for recreation delay
-            jest.advanceTimersByTime(100);
-            
-            const newColumns = container.querySelectorAll('.matrix-column').length;
-            expect(newColumns).not.toBe(originalColumns);
+            const newColumns = document.querySelectorAll('.matrix-column').length;
+            expect(newColumns).toBeLessThan(originalColumns);
         });
     });
 
     describe('Cleanup', () => {
         it('should cancel animation frame on unload', () => {
-            global.cancelAnimationFrame = jest.fn();
-            require('../matrix-electron.html');
-            
-            // Simulate window unload
+            matrix.initMatrix();
             window.dispatchEvent(new Event('unload'));
-            
-            expect(cancelAnimationFrame).toHaveBeenCalled();
+            expect(window.cancelAnimationFrame).toHaveBeenCalled();
         });
     });
 }); 
